@@ -1,4 +1,4 @@
-def dockerRun = "docker run -d -p 8080:8080 ambarodzich/docker-app:'${BUILD_NUMBER}'"
+def dockerRun = "docker run -d -p 8080:8080 rosliko/docker-app:${BUILD_NUMBER}"
 
 pipeline {
     agent any
@@ -6,7 +6,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/AMBarodzich/lesson8']])
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Rosliko/lesson8']])
             }
         }
         stage('Build_App') {
@@ -16,21 +16,21 @@ pipeline {
         }
         stage('Build_Image') {
             steps {
-                sh 'docker build -t ambarodzich/docker-app:"${BUILD_NUMBER}" .'
+                sh "docker build -t rosliko/docker-app:${BUILD_NUMBER} ."
             }
         }
         stage('Push_Image') {
             steps {
-                withCredentials([string(credentialsId: 'DockerHubPwd', variable: 'DockerHubPwd')]) {
-                    sh "docker login -u ambarodzich -p ${DockerHubPwd}"
+                withCredentials([string(credentialsId: 'DockerHubPswd', variable: 'DockerHubPswd')]) {
+                    sh 'echo "$DockerHubPswd" | docker login -u rosliko --password-stdin'
                 }
-                sh 'docker push ambarodzich/docker-app:"${BUILD_NUMBER}"'
+                sh "docker push rosliko/docker-app:${BUILD_NUMBER}"
             }
         }
         stage('Deploy') {
             steps {
-                sshagent(['6cb2e3ae-a59f-4c0e-870d-528ebd8bc6d7']) {
-                    sh "ssh -o StrictHostKeyChecking=no ubuntu@13.220.117.124 ${dockerRun}"
+                sshagent(['jenkins']) {
+                    sh "ssh -o StrictHostKeyChecking=no jenkins@192.168.0.112 ${dockerRun}"
                 }
             }
         }
